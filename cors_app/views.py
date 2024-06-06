@@ -14,7 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import HttpResponse
 import base64
-
+import csv
+from django.db.models import Q
 
 def login_view(request):
     if request.method == 'POST':
@@ -96,7 +97,63 @@ def vender_dashboard(request):
         vendor_data = None
     return render(request, 'vendor.html', {'vendor_data': vendor_data})
 
-    
+
+@login_required(login_url='/')
+def vendardownload_csv(request):
+    user_id = request.session.get('user_id')
+    user = User.objects.get(id=user_id)
+    username = user.username
+    user_data = CorsAppCentreData.objects.filter(vendor_username=username).values_list('corsid', flat=True)
+    if user_data:
+        vendor_data = CorsAppVendorData.objects.filter(corsid__in=user_data)
+    else:
+        vendor_data = []
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="vendor_data.csv"'
+
+    writer = csv.writer(response)
+ 
+    writer.writerow([
+        'CORS ID', 'Site Name', 'State', 'Date of Monumentation', 'Date of Installation', 'Station Status', 
+        'Antenna Type and Serial No.', 'Date of Installation of Antenna', 'Offset Parameter of Antenna', 
+        'Height of Bottom of Antenna from Base of Pillar (cm)', 'Height of Bottom of Antenna from Top of Base Plate (cm)', 
+        'Height of Bottom of Antenna from Solar Panel Lower Angle Bottom (cm)', 'Dimension of Pillar (H*W*B) in cm', 
+        'Dimension of Pedestal (H*W*B) in cm', 'GNSS Data Logging Interval is 1 second', 'GNSS Data Frequencies', 
+        'Electricity Provider Name & Connection No', 'Two No. of Solar Panels (60 W)', 'Serial No. of Solar Panel 1 and 2', 
+        '2 No. of Batteries (12V) (DC)', 'Company Name and Serial No. of Batteries', 'Company Name of SIM1 & Mobile No.', 
+        'Company Name of SIM2 & Mobile No.', 'Company Name and Serial No. of Broadband', 'Broadband Plan Validity', 
+        'Receiver Model name and Serial No.', 'Date of Installation of Receiver and Firmware', 
+        'Date of Installation of Radome and Serial No', 'Serial No. of Meteorological Sensor if any', 
+        'Date of Installation of Meteorological Sensor', 'Meteorological Sensor Type and Firmware', 
+        'Last Date of Site Visit', 'Operation & Maintenance Remark', 'Image East', 'Image West', 'Image North', 
+        'Image South'
+    ])
+
+
+    for data in vendor_data:
+        writer.writerow([
+            data.corsid, data.site_name, data.state_name, data.date_of_monumentation, data.date_of_installation, 
+            data.station_status, data.antenna_type_and_serial_no, data.date_of_installation_of_antenna, 
+            data.offset_parameter_of_antenna.url if data.offset_parameter_of_antenna else 'No File Available', 
+            data.height_of_bottom_of_antenna_from_base_of_pillar, data.height_of_bottom_of_antenna_from_top_of_base_plate, 
+            data.height_of_bottom_of_antenna_from_solar_panel_lower_angle_bottom, data.dimension_of_pillar, 
+            data.dimension_of_pedestal, data.logging_interval_of_gnss_data, data.gnss_data_frequencies, 
+            data.electricity_provider, data.twonumber_of_solar_panels, data.serial_no_of_solar_panels1and2, 
+            data.batteries_12v_2, data.company_name_and_no_of_batteries, data.company_name_of_sim1, 
+            data.company_name_of_sim2, 
+            data.company_name_and_no_of_broadband, data.broadband_plan_validity, data.receiver_model_name_and_serial_no, 
+            data.date_of_installation_of_receiver_and_firmware, data.date_of_installation_of_radome_and_serial_no, 
+            data.serial_no_of_meteorological_sensor, data.date_of_installation_of_meteorological_sensor, 
+            data.meteorological_sensor_type_and_firmware, data.last_date_of_site_visit, 
+            data.operationmaintainanceremark, data.image_east.url if data.image_east else 'No Image Available', 
+            data.image_west.url if data.image_west else 'No Image Available', 
+            data.image_north.url if data.image_north else 'No Image Available', 
+            data.image_south.url if data.image_south else 'No Image Available'
+        ])
+
+    return response
+  
    
 
 
@@ -135,14 +192,53 @@ def controlcentreform(request):
 
 @login_required(login_url='/')
 def control_centre_dashboard(request):
-    data  = CorsAppCentreData.objects.all()
+    query = request.POST.get('searchdata', '')
+    request.session['query'] = query
+    if query:
+        data = CorsAppCentreData.objects.filter(
+            Q(state__icontains=query)|
+            Q(corsid__icontains=query) |
+            Q(site_name__icontains=query) |
+            Q(site_code__icontains=query) |
+            Q(vendor_username__icontains=query) |
+            Q(gdc_username__icontains=query) 
+            
+        )
+        
+    else:
+        data = CorsAppCentreData.objects.all()
     context = {
         'data':data,
     }
     return render(request,'control_centre.html',context)
 
 
+def control_centre_dashboard_csv(request):
+    query = request.session.get('query')
+    
+    if query:
+        data = CorsAppCentreData.objects.filter(
+            Q(state__icontains=query) |
+            Q(corsid__icontains=query) |
+            Q(site_name__icontains=query) |
+            Q(site_code__icontains=query) |
+            Q(vendor_username__icontains=query) |
+            Q(gdc_username__icontains=query)
+        )
+    else:
+        data = CorsAppCentreData.objects.all()
 
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="cors_data.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['CorsID', 'State', 'Site Name', 'Site Code', 'Latitude of Site (DMS)', 'Longitude of Site (DMS)', 'Ellipsoid Height (m)', 'Vendor Username', 'GDC Username'])
+
+    for item in data:
+        
+        writer.writerow([item.corsid, item.state, item.site_name, item.site_code, item.coordinates_of_sites_dms_lat, item.coordinates_of_sites_dms_long, item.coordinates_of_sites_dms_elp_height, item.vendor_username, item.gdc_username])
+
+    return response
 
 
 @login_required(login_url='/')
@@ -165,16 +261,42 @@ def edit_controlcentre(request, corsid):
 
 @login_required(login_url='/')
 def gdc_dashboard(request):
+    query = request.POST.get('searchdata','')
+    request.session['query'] = query
     user_id = request.session.get('user_id')
     user = User.objects.get(id=user_id)
     username = user.username
     user_data = CorsAppCentreData.objects.filter(gdc_username=username).values_list('corsid', flat=True)
-    if user_data:
-        gdc_data = CorsAppGdcData.objects.filter(corsid__in=user_data)
-    else:
-        gdc_data = None
+    gdc_data = CorsAppGdcData.objects.filter(corsid__in=user_data)
+    if query:
+        gdc_data = gdc_data.filter(Q(corsid__icontains=query)|Q(site_name__icontains=query)|Q(state_name__icontains=query))
+        
     return render(request, 'gdc.html', {'gdc_data': gdc_data})
 
+
+
+def gdcdownload_csv(request):
+    query = request.session.get('query')
+    user_id = request.session.get('user_id')
+    user = User.objects.get(id=user_id)
+    username = user.username
+    user_data = CorsAppCentreData.objects.filter(gdc_username=username).values_list('corsid', flat=True)
+    gdc_data = CorsAppGdcData.objects.filter(corsid__in=user_data)
+    
+    if query:
+        gdc_data = gdc_data.filter(Q(corsid__icontains=query)|Q(site_name__icontains=query)|Q(state_name__icontains=query))
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="gdc_data.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['CORS ID', 'State Name', 'Site Name', 'District Name','Tahsil Name','PIN Code','Authorised Person name & Designation','Authorised Person Contact No.','Last Date of Visit','Inspection Remark','Image East Uploaded By The Field Team','Image West Uploaded By The Field Team','Image North Uploaded By The Field Team','Image South Uploaded By The Field Team'])
+    for data in gdc_data:
+        writer.writerow([data.corsid, data.state_name, data.site_name, data.dist_name,data.tahsil_name,data.pin_code,data.person_of_gdc,data.contact_no_of_gdc,data.last_date_of_gdc_visit,data.remark,
+                        data.image_east.url if data.image_east else 'No Image Available', 
+                        data.image_west.url if data.image_west else 'No Image Available', 
+                        data.image_north.url if data.image_north else 'No Image Available', 
+                        data.image_south.url if data.image_south else 'No Image Available'
+                    ])
+    return response    
 
 @login_required(login_url='/')
 def edit_gdc_data(request,corsid):
@@ -320,7 +442,7 @@ def vandor_admindashboard(request):
 
 def gdc_admindashboard(request):
     data = CorsAppGdcData.objects.all()
-    print(data)
+    
     context = {
         'data':data
     }
@@ -345,7 +467,7 @@ def vendor_datatext_file(request):
     if request.method == 'GET':
         corsid = request.session.get('corsid')
         vendor_data = CorsAppVendorDataBackup.objects.filter(corsid=corsid)
-        print(vendor_data)
+        
         text_content = ""
         for i in vendor_data:
             text_content += f"CORS ID: {i.corsid}\n"
@@ -445,7 +567,6 @@ def gdc_logdownload_text_file(request):
     if request.method == 'GET':
         corsid = request.session.get('corsid')
         gdc_data = CorsAppGdcDataBackup.objects.filter(corsid=corsid)
-        print(gdc_data)
         text_content = []
         for gdc in gdc_data:
             text_content += f"CORS ID: {gdc.corsid}\n"

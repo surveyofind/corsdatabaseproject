@@ -80,10 +80,12 @@
 {% endif %}
 
     <h1>{{user.username}} Dashboard</h1>
+    <a href="{% url 'download_csv' %}" class="btn btn-primary">Download Data</a>
     <div class="scroll-container">
         <table>
             <thead>
                 <tr>
+                    <th>Sr No</th>
                     <th>CORS ID</th>
                     <th>Site Name</th>
                     <th>State</th>
@@ -127,6 +129,7 @@
             <tbody>
                 {% for i in vendor_data %}
                 <tr>
+                    <td>{{ forloop.counter }}</td>
                     <td>{{ i.corsid }}</td>
                     <td>{{ i.site_name }}</td>
                     <td>{{ i.state_name }}</td>

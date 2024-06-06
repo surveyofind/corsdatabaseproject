@@ -80,10 +80,12 @@
 {% endif %}
 
     <h1>{{user.username}} Dashboard</h1>
+    <a href="{% url 'gdcdownload_csv' %}" class="btn btn-primary">Download Data</a>
     <div class="scroll-container">
         <table>
             <thead>
                 <tr>
+                    <th>Sr No.</th>
                     <th>CORS ID</th>
                     <th>State Name</th>
                     <th>Site Name</th>
@@ -105,6 +107,7 @@
             <tbody>
                 {% for gdc in gdc_data %}
                     <tr>
+                        <td>{{ forloop.counter }}</td>
                         <td>{{ gdc.corsid }}</td>
                         <td>{{ gdc.state_name }}</td>
                         <td>{{ gdc.site_name }}</td>

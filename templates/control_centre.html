@@ -80,10 +80,12 @@
 {% endif %}
    
     <h1>CORS Processing and Monitoring Centre</h1>
+    <a href="{% url 'control_centre_dashboard_csv' %}" class="btn btn-primary">Download Data</a>
     <div class="scroll-container">
         <table>
             <thead>
                 <tr>
+                    <th>Sr NO.</th>
                     <th>Cors id</th>
                     <th>State</th>
                     <th>Site Name</th>
@@ -99,6 +101,7 @@
             <tbody>
                 {% for controlcentre in data %}
                     <tr>
+                        <td>{{ controlcentre.id }}</td>
                         <td>{{ controlcentre.corsid }}</td>
                         <td>{{ controlcentre.state }}</td>
                         <td>{{ controlcentre.site_name }}</td>

@@ -44,6 +44,14 @@
         font-weight: bold;
         color: red; /* Change this to your desired highlight color */
     }
+    .link-about-soi-5 {
+    color: black; /* Default color */
+    }
+    .link-about-soi-5.active {
+        font-weight: bold;
+        color: red; /* Highlighted color */
+    }
+
    </style>
     {% block css %}  {% endblock css %}
 </head>
@@ -82,13 +90,45 @@
                     <ul class="top-contact text-left ttm-highlight-left">
                         <li><a href="/pages/screen-reader-access">Screen Reader Access</a> | <a href="#maincontent">Skip to main content</a> | <a href="#mainavigation">Skip to navigation</a> | Text Size <a href="javascript:ts('p',1)">+</a> <a href="javascript:ts('p',-2)">A</a> <a href="javascript:ts('p',-1)">-</a> | <a class="home-link" href="#" rel="home"><a href="hindi">Hindi</a> | <a href="/">English</a></li>
                     </ul>
+                    {% if user.controlcentre %}
+                    <div class="topbar-right text-right">
+                        <form action="{% url 'control_centre_dashboard' %}" method="post">{% csrf_token %}
+                        <ul class="top-contact">
+                            <li> <input type="text" name="searchdata" placeholder="Search Cors Data" style="width: 248px;height: 40px;">
+                       <input type="submit" value="Search" class="ttm-btn ttm-btn-size-md ttm-btn-shape-square ttm-btn-bgcolor-darkgrey " style="background-color: #226fd0;border-radius: 11px;">
+                        </li>
+                        </ul>
+                    </form>
+                    </div> 
+                    {% elif user.vendor %} 
+                    <div class="topbar-right text-right">
+                        <form action="{% url 'vender_dashboard' %}" method="post">{% csrf_token %}
+                        <ul class="top-contact">
+                            <li> <input type="text" name="searchdata" placeholder="Search Vandor Data" style="width: 248px;height: 40px;">
+                       <input type="submit" value="Search" class="ttm-btn ttm-btn-size-md ttm-btn-shape-square ttm-btn-bgcolor-darkgrey " style="background-color: #226fd0;border-radius: 11px;">
+                        </li>
+                        </ul>
+                    </form>    
+                    </div> 
+                    {% elif user.gdc %}  
+                    <div class="topbar-right text-right">
+                        <form action="{% url 'gdc_dashboard' %}" method="post">{% csrf_token %}
+                        <ul class="top-contact">
+                            <li> <input type="text"  name="searchdata" placeholder="Search Gd Data" style="width: 248px;height: 40px;">
+                       <input type="submit" value="Search" class="ttm-btn ttm-btn-size-md ttm-btn-shape-square ttm-btn-bgcolor-darkgrey " style="background-color: #226fd0;border-radius: 11px;">
+                        </li>
+                        </ul>
+                    </form>
+                    </div>
+                    {% else %} 
                     <div class="topbar-right text-right">
                         <ul class="top-contact">
                             <li> <input type="text" placeholder="Type here" style="width: 248px;height: 40px;">
-<input type="submit" value="Search" class="ttm-btn ttm-btn-size-md ttm-btn-shape-square ttm-btn-bgcolor-darkgrey " style="background-color: #226fd0;border-radius: 11px;">
-</li>
+                       <input type="submit" value="Search" class="ttm-btn ttm-btn-size-md ttm-btn-shape-square ttm-btn-bgcolor-darkgrey " style="background-color: #226fd0;border-radius: 11px;">
+                        </li>
                         </ul>
-                    </div>                  
+                    </div>
+                    {% endif %}                 
                 </div>
             </div>
         </div>
@@ -166,41 +206,44 @@
                                         <li class="about-soi-5" id="about-soi-5"><a href="{% url 'logout_view' %}" class="link-about-soi-5" id="link-about-soi-5" target="_self">Logout</a>
                                         </li>
                                         {% else %}
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'admin_dashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                       
+
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'admin_dashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" target="_self">
                                                 CORS Processing & Monitoring Centre Data
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'vandor_admindashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'vandor_admindashboard' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'vandor_admindashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'vandor_admindashboard' %}active{% endif %}" target="_self">
                                                 Vandor Data
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'gdc_admindashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'gdc_admindashboard' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'gdc_admindashboard' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'gdc_admindashboard' %}active{% endif %}" target="_self">
                                                 GD Data
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'control_centerlog' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'control_centerlog' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'control_centerlog' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'control_centerlog' %}active{% endif %}" target="_self">
                                                 CORS Processing & Monitoring Centre Data Log
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'vendor_datalog' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'vendor_datalog' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'vendor_datalog' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'vendor_datalog' %}active{% endif %}" target="_self">
                                                 Vandor Data Log
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'gdc_log' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'gdc_log' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'gdc_log' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'gdc_log' %}active{% endif %}" target="_self">
                                                 GD Data Log
                                             </a>
                                         </li>
-                                        <li class="about-soi-5" id="about-soi-5">
-                                            <a href="{% url 'logout_view' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'logout_view' %}active{% endif %}" id="link-about-soi-5" target="_self">
+                                        <li class="about-soi-5">
+                                            <a href="{% url 'logout_view' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'logout_view' %}active{% endif %}" target="_self">
                                                 Logout
                                             </a>
-                                        </li
+                                        </li>
+                                        
                                         
                                         {% endif %}
                                         </ul> 
