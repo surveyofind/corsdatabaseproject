@@ -15,7 +15,10 @@ from django.utils import timezone
 from django.http import HttpResponse
 import base64
 import csv
+import datetime
 from django.db.models import Q
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth import get_user_model
 
 def login_view(request):
     if request.method == 'POST':
@@ -28,24 +31,40 @@ def login_view(request):
         if user_type == 'control_centre':
             user = authenticate(request, username=username, password=password)
             if user and user.controlcentre:
-                login(request, user)
-                request.session['user_id'] = user.id  # Save user ID in session
-                return redirect(reverse('control_centre_dashboard'))
+                if user.is_approved:
+                    login(request, user)
+                    request.session['user_id'] = user.id  # Save user ID in session
+                    return redirect(reverse('control_centre_dashboard'))
+                else:
+                    error_message = 'Your account is awaiting approval.'
+            else:
+                error_message = 'Invalid username, password, or user type'
         elif user_type == 'vendor':
             user = authenticate(request, username=username, password=password)
             if user and user.vendor:
-                login(request, user)
-                request.session['user_id'] = user.id  # Save user ID in session
-                return redirect(reverse('vender_dashboard'))
+                if user.is_approved:
+                    login(request, user)
+                    request.session['user_id'] = user.id  # Save user ID in session
+                    return redirect(reverse('vender_dashboard'))
+                else:
+                    error_message = 'Your account is awaiting approval.'
+            else:
+                error_message = 'Invalid username, password, or user type'
         elif user_type == 'gdc':
             user = authenticate(request, username=username, password=password)
             if user and user.gdc:
-                login(request, user)
-                request.session['user_id'] = user.id  # Save user ID in session
-                return redirect(reverse('gdc_dashboard'))
+                if user.is_approved:
+                    login(request, user)
+                    request.session['user_id'] = user.id  # Save user ID in session
+                    return redirect(reverse('gdc_dashboard'))
+                else:
+                    error_message = 'Your account is awaiting approval.'
+            else:
+                error_message = 'Invalid username, password, or user type'
         return render(request, 'login.html', {'error': error_message})
 
-    return render(request, 'login.html')
+    gd_users = User.objects.filter(gdc=True)
+    return render(request, 'login.html', {'gd_users': gd_users})
 
 def signup(request):
     if request.method == 'POST':
@@ -55,26 +74,45 @@ def signup(request):
         email = request.POST.get('email')
         mobile_no = request.POST.get('mobile_no')
         User = get_user_model()
+
         if User.objects.filter(username=username).exists():
-            error_message = 'This username Allready exists'
+            error_message = 'This username already exists'
             return render(request, 'signup.html', {'error': error_message})
-            
+
         user = User.objects.create_user(
             username=username,
             password=password,
             email=email,
-            mobileno=mobile_no
+            mobileno=mobile_no,
+            is_approved=False  # Set the user as unapproved
         )
+
         if user_type == 'control_centre':
             user.controlcentre = True
         elif user_type == 'vendor':
             user.vendor = True
         elif user_type == 'gdc':
             user.gdc = True
+
         user.save()
         return redirect('login')
+
     return render(request, 'signup.html')
 
+
+@user_passes_test(lambda u: u.is_superuser)  # Ensure only superusers can access this view
+def approve_users(request):
+    User = get_user_model()
+    users = User.objects.all()
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        user = User.objects.get(id=user_id)
+        user.is_approved = not user.is_approved  # Toggle the approved status
+        user.save()
+        return redirect('approve_users')
+
+    return render(request, 'approve_users.html', {'users': users})
 
 
 def logout_view(request):
@@ -87,27 +125,30 @@ def logout_view(request):
 
 @login_required(login_url='/')
 def vender_dashboard(request):
+    query = request.POST.get('searchdata', '')
+    request.session['query'] = query
     user_id = request.session.get('user_id')
     user = User.objects.get(id=user_id)
     username = user.username
     user_data = CorsAppCentreData.objects.filter(vendor_username=username).values_list('corsid', flat=True)
-    if user_data:
-        vendor_data = CorsAppVendorData.objects.filter(corsid__in=user_data)
-    else:
-        vendor_data = None
+    vendor_data = CorsAppVendorData.objects.filter(corsid__in=user_data)
+    if query:
+        vendor_data = vendor_data.filter(Q(corsid__icontains=query)|Q(site_name__icontains=query)|Q(state_name__icontains=query))
+        
     return render(request, 'vendor.html', {'vendor_data': vendor_data})
 
 
 @login_required(login_url='/')
 def vendardownload_csv(request):
+    query = request.session.get('query')
     user_id = request.session.get('user_id')
     user = User.objects.get(id=user_id)
     username = user.username
     user_data = CorsAppCentreData.objects.filter(vendor_username=username).values_list('corsid', flat=True)
-    if user_data:
-        vendor_data = CorsAppVendorData.objects.filter(corsid__in=user_data)
-    else:
-        vendor_data = []
+    vendor_data = CorsAppVendorData.objects.filter(corsid__in=user_data)
+    if query:
+        vendor_data = vendor_data.filter(Q(corsid__icontains=query)|Q(site_name__icontains=query)|Q(state_name__icontains=query))
+        
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="vendor_data.csv"'
@@ -243,6 +284,7 @@ def control_centre_dashboard_csv(request):
 
 @login_required(login_url='/')
 def edit_controlcentre(request, corsid):
+    date = datetime.datetime.now()
     username_vendor = User.objects.filter(vendor=1)
     username_gdc = User.objects.filter(gdc=1)
     controlcentre = CorsAppCentreData.objects.get(corsid=corsid)
@@ -252,6 +294,7 @@ def edit_controlcentre(request, corsid):
         controlcentre.coordinates_of_sites_dms_elp_height = request.POST.get('coordinates_of_sites_dms_elp_height')
         controlcentre.vendor_username = request.POST.get('vendor_username')
         controlcentre.gdc_username = request.POST.get('gdc_username')
+        controlcentre.updatetime=date
         controlcentre.save()
         messages.success(request, 'Successfully updated your data')
         return redirect('control_centre_dashboard')
@@ -300,6 +343,7 @@ def gdcdownload_csv(request):
 
 @login_required(login_url='/')
 def edit_gdc_data(request,corsid):
+    date = datetime.datetime.now()
     gdc_data = get_object_or_404(CorsAppGdcData, corsid=corsid)
     if request.method =='POST':
         gdc_data.dist_name = request.POST.get('dist_name')
@@ -310,6 +354,7 @@ def edit_gdc_data(request,corsid):
         gdc_data.contact_no_of_gdc = request.POST.get('contact_no_of_gdc')
         gdc_data.last_date_of_gdc_visit = request.POST.get('last_date_of_gdc_visit')
         gdc_data.remark = request.POST.get('remark')
+        gdc_data.updatetime = date
         if request.FILES.get('image_east'):
             gdc_data.image_east = request.FILES['image_east']
         if request.FILES.get('image_west'):
@@ -334,8 +379,7 @@ def edit_gdc_data(request,corsid):
 
 
 def edit_vendor_data(request, corsid):
-    current_time_utc = timezone.now()
-    current_time_kolkata = current_time_utc.astimezone(pytz_timezone('Asia/Kolkata'))
+    date = datetime.datetime.now()
     vendor = get_object_or_404(CorsAppVendorData, corsid=corsid)
     original_corsid = vendor.corsid
     if request.method == 'POST':
@@ -373,7 +417,7 @@ def edit_vendor_data(request, corsid):
         vendor.meteorological_sensor_type_and_firmware = request.POST.get('meteorological_sensor_type_and_firmware')
         gnss_data_frequencies = request.POST.getlist('gnss_data_frequencies')
         vendor.gnss_data_frequencies = ','.join(gnss_data_frequencies)
-        vendor.vendor_time = current_time_kolkata
+        vendor.vendor_time = date
         vendor.operationmaintainanceremark =  request.POST.get('operationmaintainanceremark')
         if request.FILES.get('offset_parameter'):
             vendor.offset_parameter_of_antenna = request.FILES['offset_parameter']
@@ -507,6 +551,7 @@ def vendor_datatext_file(request):
             text_content += f"Image West Uploaded By The Service Provider: {i.image_west}\n"
             text_content += f"Image North Uploaded By The Service Provider: {i.image_north}\n"
             text_content += f"Image South Uploaded By The Service Provider: {i.image_south}\n"
+            text_content += f"Data Update Time: {i.vendor_time}\n"
             text_content += "\n"
 
         # Create the response
@@ -541,6 +586,7 @@ def control_centerlogdownload(request):
             text_content += f"Ellipsoid Height (m): {gdc.coordinates_of_sites_dms_elp_height}\n"
             text_content += f"Vendor Username: {gdc.vendor_username}\n"
             text_content += f"GD Username: {gdc.gdc_username}\n"
+            text_content += f"Data Update Time: {gdc.updatetime}\n"
             # Add other fields as needed
             text_content += "\n"  
         response = HttpResponse(text_content, content_type='text/plain')
@@ -586,6 +632,7 @@ def gdc_logdownload_text_file(request):
             text_content += f"Image West Uploaded By The Field Team: {gdc.image_west.url if gdc.image_west else 'No Image Available'}\n"
             text_content += f"Image North Uploaded By The Field Team: {gdc.image_north.url if gdc.image_north else 'No Image Available'}\n"
             text_content += f"Image South Uploaded By The Field Team: {gdc.image_south.url if gdc.image_south else 'No Image Available'}\n"
+            text_content += f"Data Update Time: {gdc.updatetime}\n"
             
             text_content += "\n"
 

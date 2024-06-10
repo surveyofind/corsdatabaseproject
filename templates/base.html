@@ -239,6 +239,11 @@
                                             </a>
                                         </li>
                                         <li class="about-soi-5">
+                                            <a href="{% url 'approve_users' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'gdc_log' %}active{% endif %}" target="_self">
+                                                All Usar
+                                            </a>
+                                        </li>
+                                        <li class="about-soi-5">
                                             <a href="{% url 'logout_view' %}" class="link-about-soi-5 {% if request.resolver_match.url_name == 'logout_view' %}active{% endif %}" target="_self">
                                                 Logout
                                             </a>

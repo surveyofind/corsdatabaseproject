@@ -11,13 +11,13 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f8f9fa; /* Set your desired background color */
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
         }
 
         .header {
-            background-color: #007bff; /* Set your desired header background color */
+            background-color: #007bff;
             padding: 20px;
             color: white;
             text-align: center;
@@ -69,7 +69,7 @@
         button[type="submit"] {
             width: 100%;
             padding: 10px;
-            background-color: #007bff; /* Set your desired button background color */
+            background-color: #007bff;
             color: white;
             border: none;
             border-radius: 4px;
@@ -78,7 +78,7 @@
         }
 
         button[type="submit"]:hover {
-            background-color: #0056b3; /* Adjust to your preferred hover color */
+            background-color: #0056b3;
         }
 
         .signup-link {
@@ -86,7 +86,7 @@
         }
 
         .signup-link a {
-            color: #007bff; /* Set your desired link color */
+            color: #007bff;
         }
 
         .signup-link a:hover {
@@ -111,7 +111,7 @@
         <form action="" method="POST"> {% csrf_token %}
             <div class="form-group">
                 <label for="user_type">Select User Type:</label>
-                <select name="user_type" id="user_type" class="form-control">
+                <select name="user_type" id="user_type" class="form-control" onchange="updateUserField()">
                     <option value="control_centre">CORS Processing and Monitoring Centre</option>
                     <option value="vendor">Vendor</option>
                     <option value="gdc">GD</option>
@@ -119,9 +119,11 @@
             </div>
             <div class="form-group">
                 <label for="username">Username:</label>
-                <input type="text" name="username" id="username" class="form-control" required>
+                <div id="username-container">
+                    <input type="text" name="username" id="username" class="form-control" required>
+                </div>
             </div>
-             <div class="form-group">
+            <div class="form-group">
                 <label for="password">Password:</label>
                 <div class="password-input">
                     <input type="password" name="password" id="password" class="form-control" required>
@@ -136,7 +138,6 @@
 </div>
 
 <!-- Bootstrap JS and dependencies -->
-
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -152,7 +153,23 @@
             toggleButton.innerHTML = "&#x1F441;"; // Change to 'Show' icon
         }
     }
-    </script>
+
+    function updateUserField() {
+        var userType = document.getElementById("user_type").value;
+        var usernameContainer = document.getElementById("username-container");
+
+        if (userType === "gdc") {
+            usernameContainer.innerHTML = '<select name="username" id="username" class="form-control" required>' +
+                '<option value="" disabled selected>Select User</option>' +
+                '{% for user in gd_users %}' +
+                '<option value="{{ user.username }}">{{ user.username }}</option>' +
+                '{% endfor %}' +
+                '</select>';
+        } else {
+            usernameContainer.innerHTML = '<input type="text" name="username" id="username" class="form-control" required>';
+        }
+    }
+</script>
 
 </body>
 </html>

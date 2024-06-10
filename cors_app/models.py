@@ -11,6 +11,7 @@ class User(AbstractUser):
     vendor = models.BooleanField('vendor', default=False)
     gdc = models.BooleanField('gdc', default=False)
     mobileno = models.CharField(max_length=10)
+    is_approved = models.BooleanField(default=False)  # Add this field
    
 
 class CorsAppVendorData(models.Model):
@@ -51,7 +52,7 @@ class CorsAppVendorData(models.Model):
     meteorological_sensor_type_and_firmware = models.CharField(max_length=100, blank=True, null=True)
     logging_interval_of_gnss_data = models.CharField(max_length=100, blank=True, null=True)
     gnss_data_frequencies = models.CharField(max_length=100, blank=True, null=True)
-    vendor_time = models.TextField(db_column='vendor time', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+    vendor_time = models.TextField(db_column='vendor_time', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     image_east = models.FileField(upload_to ='image/',blank=True, null=True)
     image_west = models.FileField(upload_to ='image/',blank=True, null=True)
     image_north = models.FileField(upload_to ='image/',blank=True, null=True)
@@ -79,20 +80,21 @@ class CorsAppGdcData(models.Model):
     contact_no_of_gdc = models.TextField(blank=True, null=True)
     last_date_of_gdc_visit = models.TextField(blank=True, null=True)
     remark = models.TextField(blank=True, null=True)
-    image_east = models.FileField(upload_to ='uploads/',blank=True, null=True)
-    image_west = models.FileField(upload_to ='uploads/',blank=True, null=True)
-    image_north = models.FileField(upload_to ='uploads/',blank=True, null=True)
-    image_south = models.FileField(upload_to ='uploads/',blank=True, null=True)
+    image_east = models.CharField(max_length=100, blank=True, null=True)
+    image_north = models.CharField(max_length=100, blank=True, null=True)
+    image_south = models.CharField(max_length=100, blank=True, null=True)
+    image_west = models.CharField(max_length=100, blank=True, null=True)
     id = models.CharField(max_length=45, blank=True, null=True)
+    updatetime = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         managed = False
-        db_table = 'cors_app_gdc_data'    
-
+        db_table = 'cors_app_gdc_data'
 
 class CorsAppCentreData(models.Model):
     id = models.BigAutoField(primary_key=True)
     corsid = models.CharField(max_length=100, blank=True, null=True)
+    state = models.TextField(blank=True, null=True)
     site_name = models.TextField(blank=True, null=True)
     site_code = models.TextField(blank=True, null=True)
     coordinates_of_sites_dms_lat = models.TextField(blank=True, null=True)
@@ -106,11 +108,12 @@ class CorsAppCentreData(models.Model):
     alloy_username_and_password = models.TextField(blank=True, null=True)
     vendor_username = models.TextField(blank=True, null=True)
     gdc_username = models.TextField(blank=True, null=True)
-    state = models.TextField(blank=True, null=True)
+    updatetime = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'cors_app_centre_data'
+
 
     def __str__(Self):
         return Self.corsid
@@ -135,6 +138,7 @@ class CorsAppCentreDataBackup(models.Model):
     alloy_username_and_password = models.TextField(blank=True, null=True)
     vendor_username = models.TextField(blank=True, null=True)
     gdc_username = models.TextField(blank=True, null=True)
+    updatetime = models.CharField(max_length=45, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -157,6 +161,7 @@ class CorsAppGdcDataBackup(models.Model):
     image_west = models.FileField(upload_to ='uploads/',blank=True, null=True)
     image_north = models.FileField(upload_to ='uploads/',blank=True, null=True)
     image_south = models.FileField(upload_to ='uploads/',blank=True, null=True)
+    updatetime = models.CharField(max_length=45, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -201,7 +206,7 @@ class CorsAppVendorDataBackup(models.Model):
     meteorological_sensor_type_and_firmware = models.CharField(max_length=100, blank=True, null=True)
     logging_interval_of_gnss_data = models.CharField(max_length=100, blank=True, null=True)
     gnss_data_frequencies = models.CharField(max_length=100, blank=True, null=True)
-    vendor_time = models.TextField(db_column='vendor time', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+    vendor_time = models.TextField(db_column='vendor_time', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     image_east = models.FileField(upload_to ='uploads/',blank=True, null=True)
     image_west = models.FileField(upload_to ='uploads/',blank=True, null=True)
     image_north = models.FileField(upload_to ='uploads/',blank=True, null=True)

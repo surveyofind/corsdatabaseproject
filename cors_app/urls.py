@@ -28,5 +28,6 @@ urlpatterns = [
     path('download_csv', views.vendardownload_csv, name='download_csv'),
     path('gdcdownload_csv', views.gdcdownload_csv, name='gdcdownload_csv'),
     path('control_centre_dashboard_csv', views.control_centre_dashboard_csv, name='control_centre_dashboard_csv'),
+    path('approve_users', views.approve_users, name='approve_users'),
     
 ]
